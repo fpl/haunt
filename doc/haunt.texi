@@ -1,0 +1,1333 @@
+\input texinfo
+@c -*-texinfo-*-
+
+@c %**start of header
+@setfilename haunt.info
+@documentencoding UTF-8
+@settitle Haunt Reference Manual
+@c %**end of header
+
+@include version.texi
+
+@copying
+Copyright @copyright{} 2015-2021 David Thompson@*
+
+Permission is granted to copy, distribute and/or modify this document
+under the terms of the GNU Free Documentation License, Version 1.3 or
+any later version published by the Free Software Foundation; with no
+Invariant Sections, no Front-Cover Texts, and no Back-Cover Texts.  A
+copy of the license is included in the section entitled ``GNU Free
+Documentation License''.
+@end copying
+
+@dircategory Web development
+@direntry
+* Haunt: (haunt).       Haunt, the functional static site generator.
+@end direntry
+
+@titlepage
+@title Haunt Reference Manual
+@subtitle Using Haunt
+@author The Haunt Developers
+
+@page
+@vskip 0pt plus 1filll
+Edition @value{EDITION} @*
+@value{UPDATED} @*
+
+@insertcopying
+@end titlepage
+
+@contents
+
+@node Top
+@top Haunt
+
+This document describes Haunt version @value{VERSION}, an extensible,
+functional static site generator.
+
+@menu
+* Introduction::                About Haunt.
+* Installation::                Installing Haunt.
+* Tutorial::                    How to get started quickly.
+* Command-line Interface::      Using Haunt from the command-line.
+* Programming Interface::       Using the Haunt API in Scheme.
+* Contributing::                How to contribute to Haunt.
+* GNU Free Documentation License::  The license of this manual.
+* Concept Index::               Concepts.
+* Programming Index::           Data types, procedures, syntax, and variables.
+@end menu
+
+@node Introduction
+@chapter Introduction
+
+Haunt is a hackable static site generator written in Guile Scheme.  A
+static site generator assists an author with generating the HTML pages
+that they publish on the web.  Unlike ``content management systems''
+such as Wordpress or Drupal, static site generators are not dynamic
+web applications (complete with a relational database) that build
+pages on-the-fly.  Instead, web pages are built in advance, on the
+author's computer, and copied to a web server when it is time to
+publish changes.  The consequence of this design is that the web
+server no longer needs to run a complex, potentially insecure web
+application that connects to a database to retrieve data.  Static
+files can be served easily by any generic web server.  Since there is
+no web application or database server to deal with, static websites
+are easier to maintain, more secure, and resistant to high web traffic
+(``slashdotting.'')  Furthermore, the entire website is stored in
+plain text, which allows the files to be version-controlled rather
+than kept in a relational database with no concept of history that
+needs to be backed up regularly.
+
+At the time that Haunt was conceived, there existed literally hundreds
+of other static site generators.  Why add another one?  Haunt
+differentiates itself from most other static site generators in that
+it aspires to the Emacs philosophy of ``practical software freedom.''
+Not only is the source code available under a Free Software license,
+as most static site generators are, it is designed to be easily hacked
+and extended without altering the core source code.  Haunt
+purposefully blurs the line between document and program, author and
+programmer, by embracing the notion of data as code.  A Haunt-based
+website is not simply data, but a computer program.  This design
+strategy encourages authors to automate repetitive tasks and empowers
+them to extend the software with their own ideas.
+
+To make such a system work well, a general-purpose, extensible
+programming language is needed.  A traditional configuration file
+format simply will not do.  The programming language that we feel is
+best suited to this task is Scheme, a clean and elegant dialect of
+Lisp.  We believe that by giving authors the full expressive power of
+Scheme, they will be able to produce better websites and make better
+use of their time than with less programmable systems and less capable
+programming languages.  Authors should feel empowered to hack the
+system to make it do what they want rather than what some programmer
+decided they should want.  And perhaps most importantly, building
+websites with Haunt should be @emph{fun}.
+
+Websites written in Haunt are described as purely functional programs
+that accept ``posts'', text documents containing arbitrary metadata,
+as input and transform them into complete HTML pages using Scheme
+procedures.  Haunt has no opinion about what markup language authors
+should use to write their posts and will happily work with any format
+for which a ``reader'' procedure exists.  Likewise, Haunt also has no
+opinion about how authors should structure their sites, but has sane
+defaults.  Currently, there exist helpful ``builder'' procedures that
+do common tasks such as generating a blog or Atom feed.  While the
+built-in features may be enough for some, they surely will not be
+enough for all.  Haunt's Scheme API empowers authors to easily tweak
+existing components, write replacements, or add entirely new features
+that do things no else has thought to do yet.
+
+Happy haunting!
+
+@node Installation
+@chapter Installation
+
+@menu
+* Downloading::                 Downloading the source code.
+* Requirements::                Software needed to build and run Haunt.
+* Building::                    Building from source code.
+@end menu
+
+@node Downloading
+@section Downloading
+
+Official Haunt source code release tarballs can be found under Releases
+in @url{https://dthompson.us/projects/haunt.html, Haunt's website},
+along with their associated checksums.
+
+@node Requirements
+@section Requirements
+
+Haunt depends on the following packages:
+
+@itemize
+@item
+@url{https://gnu.org/software/guile, GNU Guile} version 2.0.11 or
+later
+@end itemize
+
+The following dependencies are optional:
+
+@itemize
+@item
+@url{http://www.nongnu.org/guile-reader/, Guile-Reader} version 0.6 or
+later (for Skribe support)
+@item
+@url{https://github.com/OrangeShark/guile-commonmark, guile-commonmark}
+version 0.1 or later (for CommonMark support)
+@item
+@url{https://rsync.samba.org/, rsync}
+version 0.2 or later (for rsync publishing)
+@item
+@url{https://sr.ht/~emersion/hut/, hut}
+version 0.2 or later (for Sourcehut publishing)
+@item
+@url{https://www.gnu.org/software/tar/, Tar} (for Sourcehut publishing)
+@end itemize
+
+@node Building
+@section Building
+
+Haunt uses the standard GNU build system, so the basic installation
+procedure looks like this:
+
+@example
+./configure
+make
+make install
+@end example
+
+This will install Haunt to @file{/usr/local/}.  This is not part of
+the default load path for GNU Guile if you installed it from your
+distribution's package manager (@file{/usr} is.) You may choose to
+change the prefix to your GNU Guile's location with @code{./configure
+--prefix=/usr} or add @file{/usr/local/} to GNU Guile's load path in
+your shell environment like this (replacing 3.0 with your GNU Guile
+version):
+
+@example
+export GUILE_LOAD_PATH="/usr/local/share/guile/site/3.0\
+$@{GUILE_LOAD_PATH:+:@}$GUILE_LOAD_PATH"
+
+export GUILE_LOAD_COMPILED_PATH="/usr/local/lib/guile/3.0/site-ccache\
+$@{GUILE_LOAD_COMPILED_PATH:+:@}$GUILE_COMPILED_LOAD_PATH"
+@end example
+
+(@pxref{Environment Variables, Environment Variables,, guile, GNU
+Guile Reference Manual} for more details on @env{GUILE_LOAD_PATH} and
+@env{GUILE_LOAD_COMPILED_PATH}.)
+
+@node Tutorial
+@chapter Tutorial
+
+The goal of this tutorial is to quickly create a barebones blog with
+Haunt in order to demonstrate the basic workflow and key concepts.
+
+First, create a directory for the new site:
+
+@example
+mkdir haunt-tutorial
+cd haunt-tutorial
+@end example
+
+Next, create the site configuration file @file{haunt.scm}.  This is
+where all of the code for building the website will go.
+
+Here's what a simple Haunt configuration looks like:
+
+@example
+(use-modules (haunt asset)
+             (haunt site)
+             (haunt builder blog)
+             (haunt builder atom)
+             (haunt reader skribe))
+
+(site #:title "My First Haunt Site"
+      #:domain "example.com"
+      #:default-metadata
+      '((author . "Eva Luator")
+        (email  . "eva@@example.com"))
+      #:readers (list skribe-reader)
+      #:builders (list (blog)
+                       (atom-feed)
+                       (atom-feeds-by-tag)))
+@end example
+
+Haunt represents the full configuration of the website using the
+@code{site} procedure.  Site objects specify things like the site
+title, the default metadata to use for posts, which markup formats are
+supported, and which builders are used to generate web pages.
+
+With the above code saved into the @file{haunt.scm} file, the next
+step is to create a @file{posts} directory and populate it with
+articles to publish.  Put the text below into a file named
+@file{posts/hello.skr}:
+
+@example
+(post
+ :title "Hello, World!"
+ :date (make-date* 2015 10 15)
+ :tags '("hello")
+
+ (h1 [Hello, World!])
+
+ (p [This is my very first Skribe document!]))
+@end example
+
+This is a
+@url{http://www.nongnu.org/skribilo/doc/user-3.html#skribe-syntax,
+Skribe} document.  Skribe is one of the built-in languages that Haunt
+knows how to work with.  It's basically Scheme, but with support for
+writing literal text without quoting it all by enclosing it in square
+brackets.  The code above defines a post named ``Hello, World!'' with
+a publishing date of 2015-10-15, whose contents are just a single
+heading and a paragraph.
+
+To build the site, run @command{haunt build} to compile all of the
+HTML pages.  To view the results, run @command{haunt serve} and visit
+@url{http://localhost:8080} in a web browser.  @command{haunt serve}
+is a handy utility that serves the contents of the website using
+Guile's built-in HTTP server.  Since the blog builder was specified in
+@file{haunt.scm}, the default index page is a simple listing of all
+posts, which for now is a single post.  Clicking on the post title
+will display a page with only that post's contents.
+
+In addition to the basic blog builder, the @file{haunt.scm} file
+specifies two additional builders for Atom feeds.  The
+@code{atom-feed} builder creates a feed of all posts located at
+@url{http://localhost:8080/feed.xml}.  The @code{atom-feeds-by-tag}
+builder creates one feed for each unique tag specified in the post
+metadata.  There's only one tag right now, ``hello'', and its feed is
+located at @url{http://localhost:8080/feeds/tags/hello.xml}.
+
+Tweaking a post, rebuilding the site, and viewing the results in a web
+browser is the typical Haunt workflow.  However, having to run
+@command{haunt build} every after each edit is tedious.  To address
+this, run @command{haunt serve --watch}.  The Haunt web server, in
+addition to serving web pages, will now watch for changes to important
+files and automatically rebuild the site when they are edited.  This
+streamlines the workflow into an edit, save, view loop.
+
+Now that we've introduced the basic utilities and concepts, continue
+reading this manual to learn more about Haunt's command-line and
+programming interfaces.
+
+@node Command-line Interface
+@chapter Command-line Interface
+
+@menu
+* Invoking haunt build::        Build the website.
+* Invoking haunt serve::        Serve the website over HTTP.
+* Invoking haunt new::          Generating a blog template.
+* Invoking haunt publish::      Publish the website.
+@end menu
+
+The Haunt command-line interface is composed of many subcommands.  The
+general syntax for all Haunt commands is:
+
+@example
+haunt @var{subcommand} @var{options}@dots{}
+@end example
+
+@node Invoking haunt build
+@section Invoking @command{haunt build}
+
+The @command{haunt build} command realizes a Haunt site configuration
+file by compiling web pages and copying static assets to the output
+directory.  For details on how to configure a Haunt site,
+@pxref{Sites}.
+
+Example:
+
+@example
+haunt build --config=haunt.scm
+@end example
+
+@table @code
+
+@item --config=@var{configuration-file}
+@itemx -c @var{configuration-file}
+Load the Haunt site declaration from @var{configuration-file}.
+
+@end table
+
+@node Invoking haunt serve
+@section Invoking @command{haunt serve}
+
+The @command{haunt serve} command allows one to quickly view a local
+preview of the generated website before publishing the finished
+product to a remote web server.  When @command{haunt serve} runs, a
+local HTTP server is spawned.  Visit the server using a web browser to
+inspect the results of the build.  By default, the web server listens
+on port 8080, so the URL to visit would be
+@url{http://localhost:8080}.
+
+While developing, it is common to rebuild the site frequently to view
+the results of incremental changes.  Rather than manually running
+@command{haunt build} (@ref{Invoking haunt build}) each time changes
+are made, the @code{--watch} flag can be used to automatically rebuild
+the site when a source file changes on disk.
+
+@table @code
+
+@item --config=@var{configuration-file}
+@itemx -c @var{configuration-file}
+Load the Haunt site declaration from @var{configuration-file}.
+
+@item --port=@var{port}
+@itemx -p @var{port}
+
+Listen for HTTP requests on @var{port}.  Defaults to 8080.
+
+@item --host=@var{host}
+@itemx -p @var{host}
+
+Listen for HTTP requests on @var{host}.  Accepts an IP address (IPv4
+or IPv6), @code{localhost} or @code{loopback} to serve on the local
+loopback device (the default), or @code{any} to bind on all local
+available ports (useful if you want to show off your website to
+someone else on your LAN, or something.)
+
+@item --watch
+@itemx -w
+
+Automatically rebuild the site when source files change.
+
+@end table
+
+@node Invoking haunt new
+@section Invoking @command{haunt new}
+
+The @command{haunt new} command creates a starter template for a new website.
+
+Usage:
+
+@example
+haunt new
+@end example
+
+By default, haunt will create a directory called @file{blog}.  To use a
+different name for your new blog, simply provide the name at the
+command line as follows:
+
+@example
+haunt new my-blog
+@end example
+
+@node Invoking haunt publish
+@section Invoking @command{haunt publish}
+
+The @command{haunt publish} command deploys the site to a remote
+location.  The site must have already been built via @command{haunt
+build} before running @command{haunt publish}.
+
+Usage:
+
+@example
+haunt publish
+@end example
+
+By default, Haunt uses the publisher named @code{production} defined
+for the current site.  However, Haunt supports multiple publishers.
+Consider the use case where an author wants to publish to a staging
+environment to confirm that everything looks good on a real web server
+before publishing to production.  To use a non-production publisher,
+simply say so at the command line:
+
+@example
+haunt publish staging
+@end example
+
+For details on how to configure publishers, @pxref{Publishers}.
+
+@node Programming Interface
+@chapter Programming Interface
+
+@menu
+* Sites::                       Description of the site and how to build it.
+* Posts::                       Articles, prose, blog posts, etc.
+* Readers::                     Post interpreters.
+* Builders::                    Web page builders.
+* Publishers::                  How to publish your site.
+* Artifacts::                   The build outputs that form a website.
+* Assets::                      Images, stylesheets, etc.
+@end menu
+
+Haunt is a fully-programmable system composed of several Guile Scheme
+modules.  This section documents the public API.
+
+@node Sites
+@section Sites
+
+@example
+(use-modules (haunt site))
+@end example
+
+A site object defines all of the properties for a Haunt website: The
+site name, domain name, where blog posts are found, what post formats
+are understood, which procedures are used to build the site, where the
+output files are written to, etc.
+
+@deffn {Procedure} site [#:title "This Place is Haunted"] @
+       [#:domain "example.com"] [#:posts-directory "posts"] @
+       [#:file-filter @code{default-file-filter}] @
+       [#:build-directory "site"] [#:default-metadata '()] @
+       [#:make-slug @code{post-slug}] [#:readers '()] @
+       [#:builders '()] [#:publishers '()]
+Create a new site object.  All arguments are optional:
+
+@table @var
+
+@item title
+The name of the site.
+
+@item posts-directory
+The directory where posts are found.
+
+@item file-filter
+A predicate procedure that returns @code{#f} when a post file should
+be ignored, and @code{#t} otherwise.  Emacs temporary files are
+ignored by default.
+
+@item build-directory
+The directory that generated pages are stored in.
+
+@item default-metadata
+An alist of arbitrary default metadata for posts whose keys are
+symbols.
+
+@item make-slug
+A procedure generating a file name slug from a post.
+
+@item readers
+A list of reader objects for processing posts.
+
+@item builders
+A list of procedures for building pages from posts.
+
+@item publishers
+A list of publisher objects for upload site contents to a remote location
+
+@end table
+
+@end deffn
+
+@deffn {Procedure} site? @var{obj}
+Return @code{#t} if @var{obj} is a site object.
+@end deffn
+
+@deffn {Procedure} site-title @var{site}
+Return the title of @var{site}.
+@end deffn
+
+@deffn {Procedure} site-domain @var{site}
+Return the domain of @var{site}.
+@end deffn
+
+@deffn {Procedure} site-posts-directory @var{site}
+Return the posts directory for @var{site}.
+@end deffn
+
+@deffn {Procedure} site-file-filter @var{site}
+Return the file filter procedure for @var{site}.
+@end deffn
+
+@deffn {Procedure} site-build-directory @var{site}
+Return the build directory of @var{site}.
+@end deffn
+
+@deffn {Procedure} site-make-slug @var{site}
+Return the slug constructor for @var{site}.
+@end deffn
+
+@deffn {Procedure} site-readers @var{site}
+Return the list of reader procedures for @var{site}.
+@end deffn
+
+@deffn {Procedure} site-builders @var{site}
+Return the list of builder procedures for @var{site}.
+@end deffn
+
+@deffn {Procedure} site-publishers @var{site}
+Return the list of publisher objects for upload @var{site} contents to a
+remote location.
+@end deffn
+
+@node Posts
+@section Posts
+
+@example
+(use-modules (haunt post))
+@end example
+
+Posts represent the articles that are kept in a site's post directory
+and written in a markup format that Haunt can understand.
+@xref{Readers} for how files on disk can be transformed into posts.
+
+@deffn {Procedure} make-post @var{file-name} @var{metadata} @var{sxml}
+Create a new post object that represents the contents of the file
+@var{file-name}.  The body of the post, @var{sxml}, is represented as
+an SXML tree (@pxref{SXML, SXML,, guile, GNU Guile Reference Manual})
+and the metadata is an association list (@pxref{Association Lists,
+Association Lists,, guile, GNU Guile Reference Manual}) of arbitrary
+key/value pairs.
+@end deffn
+
+@deffn {Procedure} post? @var{object}
+Return @code{#t} if @var{object} is a post.
+@end deffn
+
+@deffn {Procedure} post-file-name @var{post}
+Return the file name for @var{post}.
+@end deffn
+
+@deffn {Procedure} post-metadata @var{post}
+Return the metadata association list for @var{post}.
+@end deffn
+
+@deffn {Procedure} post-sxml @var{post}
+Return the SXML tree for @var{post}.
+@end deffn
+
+@deffn {Procedure} post-ref @var{post} @var{key}
+Return the metadata value corresponding to @var{key} within
+@var{post}.
+@end deffn
+
+@deffn {Procedure} post-slug post
+Return a URL slug suitable for the file name of @var{post}.  If a
+custom @code{slug} metadata value exists for @var{post} then that is
+returned.  Otherwise, a slug is automatically generated from the
+@code{title} metadata value.
+@end deffn
+
+The original @code{post-slug} procedure above has some less than ideal
+behavior.  One issue is that version numbers like ``1.2.3'' get
+transformed to ``123'' rather than something more sensible like
+``1-2-3''.  Unfortunately, changing this behavior would mean breaking
+the URLs for existing Haunt sites.  Instead, users may opt-in to using
+@code{post-slug-v2} by passing it as the @code{#:make-slug} argument
+to @code{make-site}.  @xref{Sites} for more information.
+
+@deffn {Procedure} post-slug-v2 post
+Transform the title of @var{post} into a URL slug.  This second
+revision does a better job than the original.  Like @code{post-slug},
+if a custom @code{slug} metadata value exists for @var{post} then that
+is returned.  Otherwise, a slug is automatically generated from the
+@code{title} metadata value.
+@end deffn
+
+@defvr {Variable} %default-date
+The default date of a post when no other date is specified in the
+metadata association list.
+@end defvr
+
+@deffn {Procedure} post-date @var{post}
+Return the date for @var{post}, or @code{%default-date} if no date is
+specified.
+@end deffn
+
+@deffn {Procedure} posts/reverse-chronological @var{posts}
+Sort @var{posts}, a list of posts, in reverse chronological order.
+@end deffn
+
+@deffn {Procedure} post-author @var{post}
+Return the author of @var{post}, or @code{#f} if no author is
+specified.
+@end deffn
+
+@deffn {Procedure} post-tags @var{post}
+Return list of tags for @var{post}, or the empty list if no tags are
+specified.
+@end deffn
+
+@deffn {Procedure} post-title @var{post}
+Return the title of @var{post}, or @code{#f} if no title is
+specified.
+@end deffn
+
+@deffn {Procedure} posts/group-by-tag @var{posts}
+Create an association list of tags mapped to the posts in the list
+@var{posts} that used them.
+@end deffn
+
+@node Readers
+@section Readers
+
+@menu
+* Reader::                      Reader interface and basic readers
+* Texinfo::                     Texinfo reader
+* Skribe::                      Skribe reader
+* CommonMark::                  CommonMark reader
+@end menu
+
+@node Reader
+@subsection Reader
+@example
+(use-modules (haunt reader))
+@end example
+
+The purpose of a reader is to translate the markup within a post file
+into an SXML tree representing the HTML structure and associate some
+metadata with it.
+
+@deffn {Procedure} make-reader @var{matcher} @var{proc}
+Create a new reader.  The reader is to be activated when
+@var{matcher}, a procedure that accepts a file name as its only
+argument, returns @code{#t}.  When a post file matches, the procedure
+@var{proc}, which also accepts a file name as its only argument, reads
+the contents and returns a post object (@pxref{Posts}).
+@end deffn
+
+@deffn {Procedure} reader? @var{object}
+Return @code{#t} if @var{object} is a reader.
+@end deffn
+
+@deffn {Procedure} reader-matcher @var{reader}
+Return the match procedure for @var{reader}.
+@end deffn
+
+@deffn {Procedure} reader-proc @var{reader}
+Return the read procedure for @var{reader}.
+@end deffn
+
+@deffn {Procedure} reader-match? @var{reader} @var{file-name}
+Return @code{#t} if @var{file-name} is a file supported by
+@var{reader}.
+@end deffn
+
+@deffn {Procedure} reader-find? readers file-name
+Return the first reader in @var{readers} that can parse
+@var{file-name}, or @code{#f} if there is no such reader.
+@end deffn
+
+@deffn {Procedure} reader-read reader file-name
+Parse @var{file-name} using @var{reader} and return two values: an
+alist of metadata and an SXML tree.
+@end deffn
+
+@deffn {Procedure} read-post @var{reader} @var{file-name} [@var{default-metadata}]
+Read a post object from @var{file-name} using @var{reader}, merging
+its metadata with @var{default-metadata}, or the empty list if not
+specified.
+@end deffn
+
+@deffn {Procedure} read-posts @var{directory} @var{keep?} @var{readers} [@var{default-metadata}]
+Read all of the files in @var{directory} that match @var{keep?} as
+post objects.  The @var{readers} list must contain a matching reader
+for every post.
+@end deffn
+
+@deffn {Procedure} make-file-extension-matcher @var{ext} [@var{exts} ...]
+Create a procedure that returns @code{#t} when a file name ends with
+``.@var{ext}'' or any additional extension in @var{exts}.
+@end deffn
+
+@defvr {Procedure} sxml-reader
+A basic reader for posts written as Scheme code that evaluates to an
+an association list.  The special key @code{content} contains the post
+body as an SXML tree.
+
+Example:
+
+@example
+(use-modules (haunt utils))
+
+`((title . "Hello, world!")
+  (date . ,(string->date* "2015-04-10 23:00"))
+  (tags "foo" "bar")
+  (summary . "Just a test")
+  (content
+   ((h2 "Hello!")
+    (p "This is Haunt.  A static site generator for GNU Guile."))))
+@end example
+
+@end defvr
+
+@defvr {Procedure} html-reader
+A basic reader for posts written in plain ol' HTML.  Metadata is
+encoded as the @code{key: value} pairs, one per line, at the beginning
+of the file.  A line with the @code{---} sentinel marks the end of the
+metadata section and the rest of the file is encoded as HTML.
+
+Example:
+
+@example
+title: A Foo Walks Into a Bar
+date: 2015-04-11 20:00
+tags: bar
+---
+<p>
+  This is an example using raw HTML, because Guile doesn't have a
+  Markdown parser.
+</p>
+@end example
+
+@end defvr
+
+@node Texinfo
+@subsection Texinfo
+@example
+(use-modules (haunt reader texinfo))
+@end example
+
+@defvr {Procedure} texinfo-reader
+A reader for posts written in texinfo, the official documentation format
+of the GNU project.  Metadata is encoded as @code{key: value} pairs, one
+per line, at the beginning of the file.  A line with the @code{---}
+sentinel marks the end of the metadata section and the rest of the file
+is encoded as HTML.
+
+Example:
+
+@example
+title: Hello, Texi!
+date: 2016-08-20 12:00
+tags: texinfo, foo
+---
+
+@@emph@{Texinfo@} is the official documentation format of the
+@@url@{http://www.gnu.org/, GNU project@}.  It was invented by Richard
+Stallman and Bob Chassell many years ago, loosely based on Brian
+Reid's Scribe and other formatting languages of the time.  It is
+used by many non-GNU projects as well.
+@end example
+
+@end defvr
+
+@node Skribe
+@subsection Skribe
+@example
+(use-modules (haunt reader skribe))
+@end example
+
+@defvr {Procedure} skribe-reader
+A reader for posts written in Skribe, a markup language with the full power
+of Scheme.  Skribe posts are created with the @code{post} expression with
+metadata encoded as @code{:key expression} pairs at the beginning of the
+@code{post} expression.  After the metadata section, the rest of the @code{post}
+expression is encoded as HTML.
+
+Example:
+
+@example
+(post
+ :title "Hello, Skribe!"
+ :date (make-date* 2016 08 20 12 00)
+ :tags '("skribe" "foo" "baz")
+
+ (h2 [This is a Skribe post])
+
+ (p [Skribe is a ,(em [really]) cool document authoring format
+     that provides all the power of Scheme whilst giving the user
+     a means to write literal text without stuffing it into a
+     string literal. If this sort of thing suits you, be sure to
+     check out ,(anchor "Skribilo"
+                        "http://www.nongnu.org/skribilo/"), too.]))
+@end example
+
+@end defvr
+
+@node CommonMark
+@subsection CommonMark
+@example
+(use-modules (haunt reader commonmark))
+@end example
+
+@defvr {Procedure} commonmark-reader
+A reader for posts written in CommonMark, a fully specified variant of
+Markdown.  Metadata is encoded as @code{key: value} pairs, one per line,
+at the beginning of the file.  A line with the @code{---} sentinel marks
+the end of the metadata section and the rest of the file is encoded as HTML.
+
+Example:
+
+@example
+title: Hello, CommonMark!
+date: 2016-08-20 12:00
+tags: markdown, commonmark
+---
+
+## This is a CommonMark post
+
+CommonMark is a **strongly** defined, *highly* compatible
+specification of Markdown, learn more about CommomMark
+[here](http://commonmark.org/).
+@end example
+
+@end defvr
+
+@node Builders
+@section Builders
+
+@menu
+* Static Assets::              Images, CSS, JavaScript, etc.
+* Flat pages::                 Simple static pages.
+* Blog::                       Dear diary...
+* Atom::                       Atom feeds.
+* RSS::                        RSS feeds.
+* Redirects::                  Client-side redirects.
+@end menu
+
+Builders are procedures that return one or more artifacts
+(@pxref{Artifacts}) when applied.  A builder accepts two arguments: A
+site (@pxref{Sites}) and a list of posts (@pxref{Posts}).
+
+Haunt comes with a few convenient builders to help users who want to
+create a simple blog with an Atom feed.
+
+@node Static Assets
+@subsection Static Assets
+
+@example
+(use-modules (haunt builder assets))
+@end example
+
+@deffn {Procedure} static-directory @var{directory} [@var{dest}]
+
+Create a builder procedure that recursively copies all of the files in
+@var{directory}, a file name relative to a site's source directory,
+and copies them into @var{dest}, a prefix relative to a site's target
+output directory.  By default, @var{dest} is @var{directory}.
+@end deffn
+
+@node Flat pages
+@subsection Flat pages
+
+@example
+(use-modules (haunt builder flat-pages))
+@end example
+
+Flat pages cover the simple case of converting a tree of files written
+in some markup language to full web pages.  Flat pages work great for
+the more informational parts of a website that don't require any fancy
+programming to generate, like an ``About me'' page.
+
+@deffn {Procedure} flat-pages [directory "pages"] @@
+                              [#:template ugly-page-template] @@
+                              [#:prefix "/"]
+
+Return a procedure that parses the files in @var{directory} and
+returns a list of HTML pages, one for each file.  The files are parsed
+using the readers configured for the current site.
+
+Each flat page starts with a metadata header.  Only a single piece of
+metadata is used, though: the title.
+
+Here's what a flat page written in Markdown might look like:
+
+@example
+title: About me
+---
+
+# About me
+
+Hello, I am Alice!  I'm a fictitious person made up for the purposes
+of demonstrating Haunt's flat page functionality.  I live here in this
+manual with my two cats: Bob and Carol.
+@end example
+
+If the above text were saved to @file{about.md} in the flat pages
+directory, the resulting HTML page would be @file{about.html}.
+
+For ``pretty'' URLS (@file{/about} rather than @file{/about.html}),
+the special metadata item @code{index: true} can be specified in the
+page header:
+
+@example
+title: About me
+index: true
+---
+
+# About me
+
+...
+@end example
+
+With the @code{index} metadata flag, Haunt will generate
+@file{about/index.html} rather than @file{about.html}.
+
+The content of each flat page is inserted into a complete HTML
+document by the @var{template} procedure.  This procedure takes three
+arguments:
+
+@itemize
+@item the site object
+@item the page metadata association list
+@item an SXML tree of the page body
+@end itemize
+
+@var{template} should return a single value: a new SXML tree
+representing a complete HTML page that presumably wraps the page body.
+
+The structure of @var{directory} is preserved in the resulting pages
+and may be optionally nested within the directory @var{prefix}.  If no
+prefix is specified, the files are placed starting at the root of the
+site.
+
+@end deffn
+
+@node Blog
+@subsection Blog
+
+@example
+(use-modules (haunt builder blog))
+@end example
+
+@deffn {Procedure} theme [#:name "Untitled"] [#:layout] [#:post-template] @
+                         [#:collection-template] [#:pagination-template]
+Create a new theme named @var{name}.
+
+The procedure @var{layout} accepts three arguments: a site, a page
+title string, and an SXML tree.  Its purpose is to wrap the contents
+of a post with the theme's header/footer and return the complete SXML
+tree for a web page.
+
+The procedure @var{post-template} accepts a single argument: a post.
+Its purpose is to return an SXML tree containing the contents of the
+post, applying any desired post-processing operations.
+
+The procedure @var{collection-template} accepts four arguments: a
+site, a title string, a list of posts, and a URL prefix string.  Its
+purpose is to return an SXML tree containing the body of the
+collection page.
+
+The procedure @var{pagination-template} accepts four arguments: a
+site, an SXML tree, the file name of the previous page, and the file
+name of the next page.  Its purpose is to incorporate the given SXML
+tree into a larger document that incorporates previous/next page
+links.
+@end deffn
+
+@deffn {Procedure} theme? @var{object}
+Return @code{#t} if @var{object} is a theme object.
+@end deffn
+
+@deffn {Procedure} blog [#:theme] [#:prefix] [#:post-prefix] @
+                        [#:collections `(("Recent Posts" "index.html" ,posts/reverse-chronological))] @
+                        [#:posts-per-page]
+
+Create a builder procedure that transforms a list of posts into pages
+decorated by @var{theme}, a theme object, whose URLs start with
+@var{prefix}.  Post pages may be nested deeper in the file hierarchy
+than collection pages by specifying the @var{post-prefix} argument.
+
+Additionally, this builder creates pages that aggregate previews of
+many posts corresponding to what is specified in the list
+@var{collections}.  Each collection is a three element list in the
+form @code{(title file-name filter)}.
+
+@table @var
+
+@item title
+The human readable name of the collection.
+
+@item file-name
+The HTML file that will contain the rendered collection.
+
+@item filter
+A procedure that accepts a list of posts as its only argument and
+returns a new list of posts.  The filter procedure is used to remove
+and/or sort the posts into the desired form for the collection.  For
+example, a filter could sort posts in reverse chronological order or
+select all posts that are written by a particular author.
+
+@end table
+
+By default, a single collection is created that lists posts in reverse
+chronological order and writes to @file{index.html}.
+
+Also by default, collection pages are not paginated.  When there are a
+lot of posts in one or more collections, it is best to paginate them.
+To do so, pass the @var{posts-per-page} argument.
+
+The default theme is intended only for testing purposes.
+
+@end deffn
+
+@node Atom
+@subsection Atom
+
+@example
+(use-modules (haunt builder atom))
+@end example
+
+@deffn {Procedure} atom-feed [#:file-name "feed.xml"] [#:subtitle "Recent Posts"] @
+                             [#:filter posts/reverse-chronological] @
+                             [#:last-updated (current-date)] @
+                             [#:max-entries 20] [#:blog-prefix ""]
+Return a builder procedure that renders a site's posts as an Atom
+feed.  All arguments are optional:
+
+@table @var
+
+@item file-name:
+The page file name.
+
+@item subtitle
+The feed subtitle.
+
+@item filter
+The procedure called to manipulate the posts list before rendering.
+
+@item last-updated
+The feed last updated date.  Defaults to the current date.
+
+@item max-entries
+The maximum number of posts to render in the feed.
+
+@item blog-prefix
+The prefix for all post URLs, which is the combination of the blog's
+prefix and post prefix.  @xref{Blog} for more information.
+
+@end table
+
+@end deffn
+
+@deffn {Procedure} atom-feeds-by-tag [#:prefix "feeds/tags"] @
+                                     [#:filter posts/reverse-chronological] @
+                                     [#:last-updated (current-date)] @
+                                     [#:max-entries 20] [#:blog-prefix ""]
+Return a builder procedure that renders an atom feed for every tag
+used in a post.  All arguments are optional:
+
+@table @var
+
+@item prefix
+The directory in which to write the feeds.
+
+@item filter
+The procedure called to manipulate the posts list before rendering.
+
+@item last-updated
+The feed last updated date.  Defaults to the current date.
+
+@item max-entries
+The maximum number of posts to render in each feed.
+
+@item blog-prefix
+The prefix for all post URLs, which is the combination of the blog's
+prefix and post prefix.  @xref{Blog} for more information.
+
+@end table
+
+@end deffn
+
+@node RSS
+@subsection RSS
+
+@example
+(use-modules (haunt builder rss))
+@end example
+
+@deffn {Procedure} rss-feed [#:file-name "rss-feed.xml"] [#:subtitle "Recent Posts"] @
+                            [#:filter posts/reverse-chronological] @
+                            [#:publication-date (current-date)] @
+                            [#:max-entries 20] [#:blog-prefix ""]
+Return a builder procedure that renders a list of posts as an RSS
+feed.  All arguments are optional:
+
+@table @var
+
+@item file-name
+The page file name.
+
+@item subtitle
+The feed subtitle.
+
+@item filter
+The procedure called to manipulate the posts list before rendering.
+
+@item publication-date
+The feed publication date.  Defaults to the current date.
+
+@item max-entries
+The maximum number of posts to render in the feed.
+
+@item blog-prefix
+The prefix for all post URLs, which is the combination of the blog's
+prefix and post prefix.  @xref{Blog} for more information.
+
+@end table
+
+@end deffn
+
+@node Redirects
+@subsection Redirects
+
+@example
+(use-modules (haunt builder redirects))
+@end example
+
+The redirects builder creates pages that trigger browser redirects to
+another URL.  This allows for easily specifying redirects as part of a
+Haunt site configuration and without the need for modifying the
+configuration of the production web server that is hosting the site.
+
+@deffn {Procedure} redirects specs
+Return a procedure that transforms a list of redirect tuples in
+@var{specs}, with the form @code{(from to)}, into a list of pages that
+trigger a browser-initiated redirect.
+
+@code{from} values must be local page file names, @emph{not} URLs, but
+@var{to} values may be either local page file names or full URLs to
+other websites.
+
+@example
+(redirects '(("/about.html" "/about/me.html") ; local
+             ("/guile.html" "https://gnu.org/software/guile"))) ; remote
+@end example
+
+@end deffn
+
+@node Publishers
+@section Publishers
+
+@example
+(use-modules (haunt publisher))
+@end example
+
+The purpose of a publisher is to deploy a built site.  Haunt comes
+with some built-in publishers, but custom publishers can be created
+with the following interface.
+
+@deffn {Procedure} make-publisher @var{name} @var{proc}
+Create a new publisher.
+@end deffn
+
+@deffn {Procedure} publisher? @var{object}
+Return @code{#t} if @var{object} is a publisher.
+@end deffn
+
+@deffn {Procedure} publisher-name @var{publisher}
+Return the publisher name.
+@end deffn
+
+@deffn {Procedure} publisher-proc @var{reader}
+Return the publisher procedure for @var{publisher}.
+@end deffn
+
+@deffn {Procedure} publish @var{publisher} @var{site}
+Publish @var{site} with @var{publisher}.
+@end deffn
+
+@deffn {Procedure} run-command  @var{program} @var{args}
+Run command @var{program} with @var{args} arguments.
+@end deffn
+
+Haunt comes with the following built-in publishers:
+
+@node Rsync
+@subsection Rsync
+
+@example
+(use-modules (haunt publisher rsync))
+@end example
+
+@deffn {Procedure} rsync-publisher [#:name 'production] [#:destination] @@
+       [#:user] [#:host] [#:name] [#:rsync] @@
+       [#:flags '("--compress" "--delete" "--progress" "--recursive" "--verbose")]
+
+Return a new publisher named @var{name} that publishes a site to
+@var{destination}, either locally or to a remote host if @var{host}
+and/or @var{user} arguments are specified.  Passing @var{rsync}
+overrides the @command{rsync} executable used.  Passing @var{flags}
+overrides the set of command line flags used.
+@end deffn
+
+@node Sourcehut
+@subsection Sourcehut
+@example
+(use-modules (haunt publisher sourcehut))
+@end example
+
+@deffn {Procedure} sourcehut-publisher [#:name 'production] [#:hut] [#:tar]
+Return a new publisher named @var{name} that publishes a site to
+@url{https://srht.site/, sourcehut pages} using the site's configured
+domain.  Passing @var{hut} and/or @var{tar} overrides the default
+@command{hut} and @command{tar} executables used.
+
+For the publisher to work, the @command{hut} CLI tool that is used
+under the hood has to be configured.  One can do so by creating
+@file{~/.config/hut/config} manually or by running the @command{hut
+init} command.  In both cases an OAuth access token needs to be
+generated via @url{https://meta.sr.ht/oauth2, sourcehut meta}.
+@end deffn
+
+@node Artifacts
+@section Artifacts
+
+@example
+(use-modules (haunt artifact))
+@end example
+
+Artifacts are objects that represent the output of a build.  A
+collection of artifacts forms a complete website.  Artifacts are quite
+simple: They contain a file name string that specifies where the
+artifact belongs in the build output directory, and a writer procedure
+that populates that file with data.
+
+For example, making an artifact that writes ``Hello, world!'' to
+@file{/hello.txt} would look like this:
+
+@example
+(make-artifact "/hello.txt"
+               (lambda (output)
+                 (call-with-output-file output
+                   (lambda (port)
+                     (display "Hello, world!\n" port)))))
+@end example
+
+Previous versions of Haunt made a distinction between pages, whose
+content is defined algorithmically, and assets, whose content is
+copied verbatim from an input file such as an image.  The artifact
+data type is a unifying primitive that replaces both pages and assets.
+
+Artifacts that require serializing some input, such as SXML, should
+use @code{serialize-artifact}.  Artifacts that make a verbatim copy of
+an input file should use @code{verbatim-artifact}.  Unless you are
+implementing a custom builder, it's unlikely that these procedures
+will be need to used directly.
+
+@deffn {Procedure} serialized-artifact destination obj serialize
+Return a new artifact whose writer serializes @var{obj} using the
+procedure @var{serialize} to the @var{destination} in the build output
+directory.
+@end deffn
+
+@deffn {Procedure} verbatim-artifact source destination
+Return a new artifact that copies the file @var{source} verbatim to
+@var{destination} within the build output directory.
+@end deffn
+
+@node Assets
+@section Assets
+
+@example
+(use-modules (haunt asset))
+@end example
+
+Assets represent files on disk that should be copied verbatim to a
+site's output directory.  Common types of assets include CSS,
+JavaScript, images, and fonts.  It is often the case that there are
+entire directories full of static assets to copy over, thus there is a
+convenient @code{directory-assets} procedure.  However, it's unlikely
+that this procedure needs to be used directly.  See @pxref{Static
+Assets} for a convenient builder.
+
+@deffn {Procedure} directory-assets @var{directory} @var{keep?} @var{dest}
+Create a list of asset objects to be stored within @var{dest} for all
+files in @var{directory} that match @var{keep?}, recursively.
+@end deffn
+
+@node Contributing
+@chapter Contributing
+
+Haunt is developed using the Git version control system.  The official
+repository is hosted at @url{https://git.dthompson.us/haunt.git}.
+
+Send patches and bug reports to @email{davet@@gnu.org}.
+
+@c *********************************************************************
+@node GNU Free Documentation License
+@appendix GNU Free Documentation License
+
+@include fdl-1.3.texi
+
+@c *********************************************************************
+@node Concept Index
+@unnumbered Concept Index
+@printindex cp
+
+@node Programming Index
+@unnumbered Programming Index
+@syncodeindex tp fn
+@syncodeindex vr fn
+@printindex fn
+
+@bye
+
+@c Local Variables:
+@c ispell-local-dictionary: "american";
+@c End:

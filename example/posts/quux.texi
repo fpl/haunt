@@ -1,0 +1,32 @@
+title: Hello, Texi!
+date: 2015-10-15 22:00
+tags: foo, bar
+---
+
+This is a test of the @emph{texinfo} reader for Haunt.  I sure hope it
+works well.  Here is a URL to the @url{http://haunt.dthompson.us,
+Haunt home page}.
+
+@example
+(use-modules (haunt asset)
+             (haunt builder blog)
+             (haunt builder atom)
+             (haunt builder assets)
+             (haunt reader)
+             (haunt reader skribe)
+             (haunt reader texinfo)
+             (haunt site))
+
+(site #:title "Built with Guile"
+      #:domain "example.com"
+      #:default-metadata
+      '((author . "Eva Luator")
+        (email  . "eva@@example.com"))
+      #:readers (list texinfo-reader skribe-reader sxml-reader html-reader)
+      #:builders (list (blog)
+                       (atom-feed)
+                       (atom-feeds-by-tag)
+                       (static-directory "images")))
+@end example
+
+This is another paragraph.

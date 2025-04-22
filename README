@@ -1,0 +1,91 @@
+-*- mode: org -*-
+
+Haunt is a static site generator written in Guile Scheme.  It's
+simple, functional, and extensible.
+
+* Features
+
+  - Easy blog and Atom/RSS feed generation
+  - Supports any markup language that can be parsed to SXML
+  - Simple development server
+  - Purely functional build process
+  - User extensible
+
+* Example Configuration
+
+#+BEGIN_SRC scheme
+  (use-modules (haunt site)
+               (haunt reader)
+               (haunt builder blog)
+               (haunt builder atom)
+               (haunt builder assets))
+
+  (site #:title "Built with Guile"
+        #:domain "example.com"
+        #:default-metadata
+        '((author . "Eva Luator")
+          (email  . "eva@example.com"))
+        #:readers (list sxml-reader html-reader)
+        #:builders (list (blog)
+                         (atom-feed)
+                         (atom-feeds-by-tag)
+                         (static-directory "images"))
+#+END_SRC
+
+* Usage
+
+Write a configuration file named =haunt.scm=.  Add your posts to a
+directory named =posts=.  Then run =haunt build=!
+
+Alternatively, use the =haunt new= command to start a project from a
+template quickly.
+
+To view your creation, run =haunt serve= and browse to
+=localhost:8080=.  For quicker development cycles, run =haunt serve
+--watch= to automatically rebuild the site when things change.
+
+* Requirements
+
+  - GNU Guile >= 2.0.11
+
+  Optional:
+
+  - guile-reader (for Skribe support)
+  - guile-commonmark (for CommonMark support)
+
+* Building from Git
+
+Haunt uses the familiar GNU build system.  GNU automake, autoconf, and
+make are required to build from a git checkout.
+
+#+BEGIN_SRC sh
+  ./bootstrap && ./configure && make
+#+END_SRC
+
+Once Haunt is built, it can be run directly from the source tree (no
+need to run =make install=) via the =pre-inst-env= script:
+
+#+BEGIN_SRC sh
+  ./pre-inst-env haunt --help
+#+END_SRC
+
+GNU Guix users can quickly create a build environment with all of the
+necessary dependencies using the handy =guix environment= tool:
+
+#+BEGIN_SRC sh
+  guix environment -l guix.scm
+#+END_SRC
+
+* Example
+
+An example Haunt site can be found in the =example= directory.  To
+build it, run:
+
+#+BEGIN_SRC sh
+  cd example
+  ../pre-inst-env haunt build
+#+END_SRC
+
+* License
+
+GNU GPLv3 or later.  See =COPYING= for the full license text.

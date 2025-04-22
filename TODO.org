@@ -1,0 +1,118 @@
+* To-do list
+** TODO Default metadata isn't honored in flat pages
+Append the site default metadata for flat pages.
+
+** TODO Don't publish if site build dir is empty or nonexistent
+This will delete the site!  Quite the footgun!
+
+** TODO Use htmlprag for html reader
+Using sxml reader is no good. What was I thinking?
+
+** TODO =haunt serve -h= is overloaded for host and help
+Let -h be for host and only --help gets help
+
+** TODO Throw a better error when a reader is not found
+This is no good:
+
+#+BEGIN_SRC sh
+  $ haunt build
+  building pages in 'site'...
+  Backtrace:
+             7 (primitive-load "/gnu/store/3c5n80ixbs198qk6dn42fiigph8s6fjs-haunt-0.3.0/bin/.haunt-real")
+  In haunt/ui.scm:
+      136:6  6 (run-haunt-command _ . _)
+  In haunt/ui/build.scm:
+       60:5  5 (haunt-build . _)
+  In haunt/site.scm:
+     116:20  4 (build-site #<<site> title: "Spritely Institute" domain: "spritely.institute" scheme: https posts-directory: …>)
+  In ice-9/ftw.scm:
+     505:39  3 (loop _ _ #(64768 11164290 16877 2 1000 998 0 4096 1727117337 1727117337 1727117337 4096 8 directory 493 # …) …)
+  In haunt/reader.scm:
+      99:24  2 (leaf "posts/2022-08-17-blast-off-spritely-institutes-tech-tour.html" _ (#<<post> file-name: "posts/2022-0…> …))
+      85:32  1 (read-post #f "posts/2022-08-17-blast-off-spritely-institutes-tech-tour.html" _)
+       80:3  0 (reader-read #f "posts/2022-08-17-blast-off-spritely-institutes-tech-tour.html")
+
+  haunt/reader.scm:80:3: In procedure reader-read:
+  In procedure struct-vtable: Wrong type argument in position 1 (expecting struct): #f
+#+END_SRC
+
+** Output XHTML5?
+<cbaines> there's still code in the data service that was copied from Mumi
+<cbaines> e.g. sxml->html should live somewhere else and be shared  [10:34]
+<andreas-e> Is this not already part of some library? It is needed by haunt if
+            I remember well.  [10:36]
+<andreas-e> Well, haunt defines a function with the same name.
+<cbaines> I don't know, but if you find a place, please let me know!
+<dthompson> I think I wrote one for haunt that handles some of the special
+            html tags  [10:37]
+<andreas-e> In haunt, html.scm. But the full module has only 130 lines.
+<dthompson> it's mostly the usual sxml->xml process but some html tags aren't
+            self-closing if they don't have any child nodes  [10:38]
+<mirai> why not simply output XHTML5? :-)  [10:41]
+<mirai> you get to use modern HTML and its valid XML
+<dthompson> I guess because I didn't know about it :)  [10:43]
+** DONE bug: Atom feed "summary" should be "content"
+haunt/builder/atom.scm line 157
+https://validator.w3.org/feed/docs/atom.html#recommendedEntryElements
+
+** Allow for cache-busting assets
+Providing the option to incorporate a hash of CSS, JS, etc. assets
+into the URLs for those assets would be nice to ensure browser cache
+misses when updates occur.  Using the query string for this would keep
+the URL paths the same but the overall URL different.
+
+** Allow #:prefix arg for 'blog' to be a procedure
+In addition to a string. Will allow for custom placement of blog
+posts. Some people want a hierarchy based on date, for example.
+
+** Add blog theme example to manual
+** DONE Remove website directory
+That is no longer used for the actual website
+** DONE Add docs for artifacts
+** Allow collection pages to live in a different directory than posts.
+** Feature request: Auto-reload pages when --watch detects changes
+** External command processing
+Hacky experimentation:
+#+BEGIN_SRC scheme
+  (use-modules (ice-9 match))
+
+  (call-with-output-file "bloop.txt"
+    (lambda (port)
+      (match (primitive-fork)
+        (0
+         (close 1)
+         (dup2 (fileno port) 1)
+         (execlp "grep" "-e" "cat" "animals"))
+        (pid
+         (waitpid pid)))))
+
+  (define (gcc c-file o-file)
+    (list "gcc" "-o" o-file c-file))
+
+  (define (external-artifact source destination command)
+    (unless (file-exists? source)
+      (error "input file does not exist" source))
+    (make-artifact destination
+                   (lambda (output)
+                     (let ((command* (append command (list source))))
+                       (format #t "run '~a' → '~a'~%"
+                               (string-join command* " ")
+                               destination)
+                       (call-with-output-file output
+                         (lambda (port)
+                           ;; Run the command in a new process with
+                           ;; stdout redirected into the output file.
+                           (match (primitive-fork)
+                             (0
+                              (close 1)
+                              (dup2 (fileno port) 1)
+                              (apply execlp command*))
+                             (pid
+                              (match (waitpid pid)
+                                ((_ . status)
+                                 (unless (zero? (status:exit-val status))
+                                   (error "command failed" command*))))))))))))
+
+#+END_SRC
+** Org-mode support
+Just shell out to emacs using batch mode!
