@@ -1,5 +1,5 @@
 ;;; Haunt --- Static site generator for GNU Guile
-;;; Copyright © 2025 Francesco P Lovergine <mbox@lovergine.com>
+;;; Copyright © 2025 Francesco P Lovergine <pobox@lovergine.com>
 ;;;
 ;;; This file is part of Haunt.
 ;;;
@@ -35,7 +35,7 @@
   #:export (tag-pages
             tag-index))
 
-(define* (tag-pages #:key 
+(define* (tag-pages #:key
                     (theme #f)
                     prefix
                     (title "Posts by Tag")
@@ -52,28 +52,28 @@ POSTS-PER-PAGE: How many posts to include per page (optional)"
   (lambda (site posts)
     (define tag-groups (posts/group-by-tag posts))
     (define theme* (or theme (theme #:name "Default")))
-    
+
     (define (tag-file-name tag)
       (string-append "tags/"
                      tag
                      ".html"))
-                     
+
     (define (make-tag-page tag posts)
       (let ((file-name (tag-file-name tag))
             (page-title (string-append title ": " tag)))
         (serialized-artifact file-name
                             (with-layout theme* site page-title
-                                        (render-collection theme* site page-title 
+                                        (render-collection theme* site page-title
                                                           (filter posts)
                                                           ""))
                             sxml->html)))
-                            
+
     (map (match-lambda
            ((tag . posts)
             (make-tag-page tag posts)))
          tag-groups)))
 
-(define* (tag-index #:key 
+(define* (tag-index #:key
                     (theme #f)
                     prefix
                     (title "Tag Index")
@@ -88,20 +88,20 @@ FILE-NAME: The file name for the tag index page"
   (lambda (site posts)
     (define tag-groups (posts/group-by-tag posts))
     (define theme* (or theme (theme #:name "Default")))
-    
+
     (define (sort-tag-groups groups)
       (sort groups
             (lambda (a b)
               (string<? (car a) (car b)))))
-              
+
     (define (tag-file-name tag)
       (string-append "/tags/"
                      tag
                      ".html"))
-    
+
     (define (tag-feed-name tag)
       (string-append "/feeds/tags/" tag ".xml"))
-                     
+
     (define (render-tag-list)
       `((h1 ,title)
         (ul (@ (id "tags-index"))
@@ -118,7 +118,7 @@ FILE-NAME: The file name for the tag index page"
                             (title ,(string-append "Atom feed for tag: " tag)))
                          "[feed]")))))
                (sort-tag-groups tag-groups)))))
-    
+
     (serialized-artifact file-name
                         (with-layout theme* site title
                                      (render-tag-list))
