@@ -60,6 +60,7 @@ SOURCES =					\
   haunt/builder/rss.scm				\
   haunt/builder/redirects.scm			\
   haunt/builder/flat-pages.scm			\
+  haunt/builder/tag-pages.scm			\
   haunt/reader/texinfo.scm			\
   haunt/publisher/rsync.scm			\
   haunt/publisher/sourcehut.scm			\
